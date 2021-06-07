@@ -11,5 +11,5 @@ windows等待开发
     count表示ping次数
     hostname 域名
     port  端口号
-    go run tcping.go -host $(hostname) -port $(port) -c count $(count)
+    go run tcping.go -host $(hostname) -port $(port) -c $(count)
 

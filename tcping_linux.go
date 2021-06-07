@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -22,7 +23,6 @@ func main() {
 	flag.Parse()
 
 	addr, err := net.LookupIP(host)
-	fmt.Println(addr)
 	if err != nil {
 		fmt.Printf(" gethostname(%s) error : %s\n", host,err)
 		return
@@ -63,7 +63,7 @@ func connect(addrs []net.IP) (time.Duration, string, error){
 	for _,addr := range addrs {
 		//创建socket文件描述符
 		syscall.ForkLock.RLock()
-		fd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_STREAM|syscall.O_NONBLOCK,0)
+		fd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_STREAM,0)
 		syscall.ForkLock.RUnlock()
 		if err != nil {
 			fmt.Println(err)
@@ -80,18 +80,35 @@ func connect(addrs []net.IP) (time.Duration, string, error){
 		}
 
 		copy(sa.Addr[:], addr[len(addr)-4:])
-		fmt.Println(sa.Addr)
 		var start = time.Now()
-		fmt.Println("connect")
-		err = syscall.Connect(fd, sa)
+		err = handleConnect(fd, sa)
 		if err != nil {
 			syscall.Close(fd)
 			continue
 		}
+		 syscall.Close(fd)
 		 last := time.Since(start)
 		 ipAddr = addr.String()
          return last*time.Nanosecond/time.Millisecond, ipAddr, nil
 	}
-	return 0, "",errors.New("cannot connect the target host and port ")
+	return 0, "",errors.New("connect time out")
 
+}
+
+func handleConnect(fd int, sa syscall.Sockaddr) error{
+	timePeriod := time.Duration(5)* time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timePeriod)
+	connectChan := make(chan error,1)
+	go func (){
+		err := syscall.Connect(fd, sa)
+		connectChan <- err
+	}()
+	defer cancel()
+	select {
+	   case err := <- connectChan:
+	   		return err
+	   case <- ctx.Done():
+	   		return ctx.Err()
+
+	}
 }

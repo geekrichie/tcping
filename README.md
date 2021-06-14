@@ -1,4 +1,4 @@
-# tcping
+# tcping  [![Build Status](https://api.travis-ci.com/geekrichie/tcping.svg?branch=main&status=passed)](https://travis-ci.com/github/geekrichie/tcping)
 tcping是一个检查域名指定端口是否可达的工具  
 项目主要参考了jlyo/tcping
 ## 依赖
